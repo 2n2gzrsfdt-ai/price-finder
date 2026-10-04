@@ -21,14 +21,16 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy
-      - name: Set Rakuten secrets
+      - name: Set API secrets
         env:
           RAKUTEN_APPLICATION_ID: ${{ secrets.RAKUTEN_APPLICATION_ID }}
           RAKUTEN_ACCESS_KEY: ${{ secrets.RAKUTEN_ACCESS_KEY }}
           RAKUTEN_AFFILIATE_ID: ${{ secrets.RAKUTEN_AFFILIATE_ID }}
+          YAHOO_APP_ID: ${{ secrets.YAHOO_APP_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           printf '%s' "$RAKUTEN_APPLICATION_ID" | npx wrangler secret put RAKUTEN_APPLICATION_ID
           printf '%s' "$RAKUTEN_ACCESS_KEY" | npx wrangler secret put RAKUTEN_ACCESS_KEY
           printf '%s' "$RAKUTEN_AFFILIATE_ID" | npx wrangler secret put RAKUTEN_AFFILIATE_ID
+          printf '%s' "$YAHOO_APP_ID" | npx wrangler secret put YAHOO_APP_ID
