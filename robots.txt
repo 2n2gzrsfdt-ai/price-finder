@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://2n2gzrsfdt-ai.github.io/price-finder/sitemap.xml
