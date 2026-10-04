@@ -17,6 +17,7 @@ async function rakutenSearch(keyword, env) {
   url.searchParams.set("format", "json");
   url.searchParams.set("applicationId", env.RAKUTEN_APPLICATION_ID);
   url.searchParams.set("accessKey", env.RAKUTEN_ACCESS_KEY);
+  if (env.RAKUTEN_AFFILIATE_ID) url.searchParams.set("affiliateId", env.RAKUTEN_AFFILIATE_ID);
   url.searchParams.set("keyword", keyword);
   url.searchParams.set("sort", "+itemPrice");
   url.searchParams.set("hits", "20");
@@ -33,7 +34,8 @@ async function rakutenSearch(keyword, env) {
       price: Number(x.itemPrice || 0),
       shipping: 0,
       total: Number(x.itemPrice || 0),
-      url: x.itemUrl || "",
+      url: x.affiliateUrl || x.itemUrl || "",
+      shippingKnown: x.postageFlag === 1,
       image: x.mediumImageUrls?.[0]?.imageUrl || ""
     };
   }).filter(x => x.name && x.price > 0);
