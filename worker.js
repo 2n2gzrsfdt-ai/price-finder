@@ -15,6 +15,7 @@ async function rakutenSearch(keyword, env) {
   if (!env.RAKUTEN_APPLICATION_ID || !env.RAKUTEN_ACCESS_KEY) return [];
   const url = new URL("https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260701");
   url.searchParams.set("format", "json");
+  url.searchParams.set("formatVersion", "2");
   url.searchParams.set("applicationId", env.RAKUTEN_APPLICATION_ID);
   url.searchParams.set("accessKey", env.RAKUTEN_ACCESS_KEY);
   if (env.RAKUTEN_AFFILIATE_ID) url.searchParams.set("affiliateId", env.RAKUTEN_AFFILIATE_ID);
@@ -26,8 +27,9 @@ async function rakutenSearch(keyword, env) {
   if (!res.ok) throw new Error("Rakuten API error: " + res.status);
   const data = await res.json();
 
-  return (data.Items || []).map(row => {
-    const x = row.Item || row;
+  if (data.error) throw new Error("Rakuten API error: " + (data.error_description || data.error));
+  return (data.Items || data.items || []).map(row => {
+    const x = row.Item || row.item || row;
     return {
       shop: "楽天市場",
       name: x.itemName || "",
@@ -69,7 +71,7 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
     const u = new URL(request.url);
 
-    if (u.pathname === "/health") return json({ ok: true, service: "PRICE FINDER API" });
+    if (u.pathname === "/health") return json({ ok: true, service: "PRICE FINDER API", configured: { rakuten: !!env.RAKUTEN_APPLICATION_ID && !!env.RAKUTEN_ACCESS_KEY, yahoo: !!env.YAHOO_APP_ID } });
     if (u.pathname !== "/api/search") return json({ error: "Not found" }, 404);
 
     const keyword = (u.searchParams.get("q") || "").trim();
