@@ -79,16 +79,24 @@ export default {
     if (keyword.length > 128) return json({ error: "q is too long" }, 400);
 
     try {
-      const [rakuten, yahoo] = await Promise.all([
+      const results = await Promise.allSettled([
         rakutenSearch(keyword, env),
         yahooSearch(keyword, env)
       ]);
+      const rakuten = results[0].status === "fulfilled" ? results[0].value : [];
+      const yahoo = results[1].status === "fulfilled" ? results[1].value : [];
+      const errors = {
+        rakuten: results[0].status === "rejected" ? String(results[0].reason?.message || results[0].reason) : null,
+        yahoo: results[1].status === "rejected" ? String(results[1].reason?.message || results[1].reason) : null
+      };
       const items = [...rakuten, ...yahoo].sort((a,b) => a.total - b.total);
+      if (!items.length) return json({ error: "price search failed", detail: errors.rakuten || errors.yahoo || "no results", sources: { rakuten: false, yahoo: false }, errors }, 502);
       return json({
         ok: true,
         keyword,
         count: items.length,
         sources: { rakuten: rakuten.length > 0, yahoo: yahoo.length > 0 },
+        errors,
         items
       });
     } catch (error) {
