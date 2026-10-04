@@ -1,0 +1,94 @@
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type"
+};
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json; charset=utf-8", ...corsHeaders }
+  });
+}
+
+async function rakutenSearch(keyword, env) {
+  if (!env.RAKUTEN_APPLICATION_ID || !env.RAKUTEN_ACCESS_KEY) return [];
+  const url = new URL("https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260701");
+  url.searchParams.set("format", "json");
+  url.searchParams.set("applicationId", env.RAKUTEN_APPLICATION_ID);
+  url.searchParams.set("accessKey", env.RAKUTEN_ACCESS_KEY);
+  url.searchParams.set("keyword", keyword);
+  url.searchParams.set("sort", "+itemPrice");
+  url.searchParams.set("hits", "20");
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Rakuten API error: " + res.status);
+  const data = await res.json();
+
+  return (data.Items || []).map(row => {
+    const x = row.Item || row;
+    return {
+      shop: "楽天市場",
+      name: x.itemName || "",
+      price: Number(x.itemPrice || 0),
+      shipping: 0,
+      total: Number(x.itemPrice || 0),
+      url: x.itemUrl || "",
+      image: x.mediumImageUrls?.[0]?.imageUrl || ""
+    };
+  }).filter(x => x.name && x.price > 0);
+}
+
+async function yahooSearch(keyword, env) {
+  if (!env.YAHOO_APP_ID) return [];
+  const url = new URL("https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch");
+  url.searchParams.set("appid", env.YAHOO_APP_ID);
+  url.searchParams.set("query", keyword);
+  url.searchParams.set("sort", "+price");
+  url.searchParams.set("results", "20");
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Yahoo Shopping API error: " + res.status);
+  const data = await res.json();
+
+  return (data.hits || []).map(x => ({
+    shop: "Yahoo!ショッピング",
+    name: x.name || "",
+    price: Number(x.price || 0),
+    shipping: Number(x.shipping?.flatRate || 0),
+    total: Number(x.price || 0) + Number(x.shipping?.flatRate || 0),
+    url: x.url || "",
+    image: x.exImage?.url || x.image?.small || ""
+  })).filter(x => x.name && x.price > 0);
+}
+
+export default {
+  async fetch(request, env) {
+    if (request.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+    const u = new URL(request.url);
+
+    if (u.pathname === "/health") return json({ ok: true, service: "PRICE FINDER API" });
+    if (u.pathname !== "/api/search") return json({ error: "Not found" }, 404);
+
+    const keyword = (u.searchParams.get("q") || "").trim();
+    if (!keyword) return json({ error: "q is required" }, 400);
+    if (keyword.length > 128) return json({ error: "q is too long" }, 400);
+
+    try {
+      const [rakuten, yahoo] = await Promise.all([
+        rakutenSearch(keyword, env),
+        yahooSearch(keyword, env)
+      ]);
+      const items = [...rakuten, ...yahoo].sort((a,b) => a.total - b.total);
+      return json({
+        ok: true,
+        keyword,
+        count: items.length,
+        sources: { rakuten: rakuten.length > 0, yahoo: yahoo.length > 0 },
+        items
+      });
+    } catch (error) {
+      return json({ error: "price search failed", detail: String(error?.message || error) }, 502);
+    }
+  }
+};
