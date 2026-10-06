@@ -20,8 +20,8 @@ async function rakutenSearch(keyword, env) {
   url.searchParams.set("accessKey", env.RAKUTEN_ACCESS_KEY);
   if (env.RAKUTEN_AFFILIATE_ID) url.searchParams.set("affiliateId", env.RAKUTEN_AFFILIATE_ID);
   url.searchParams.set("keyword", keyword);
-  url.searchParams.set("sort", "+itemPrice");
-  url.searchParams.set("hits", "20");
+  url.searchParams.set("sort", "-itemPrice");
+  url.searchParams.set("hits", "30");
 
   const res = await fetch(url);
   if (!res.ok) throw new Error("Rakuten API error: " + res.status);
@@ -48,8 +48,8 @@ async function yahooSearch(keyword, env) {
   const url = new URL("https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch");
   url.searchParams.set("appid", env.YAHOO_APP_ID);
   url.searchParams.set("query", keyword);
-  url.searchParams.set("sort", "+price");
-  url.searchParams.set("results", "20");
+  url.searchParams.set("sort", "-price");
+  url.searchParams.set("results", "50");
 
   const res = await fetch(url);
   if (!res.ok) throw new Error("Yahoo Shopping API error: " + res.status);
