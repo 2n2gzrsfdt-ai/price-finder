@@ -83,23 +83,35 @@ function normalizeText(v) {
   return String(v || "").toLowerCase().normalize("NFKC").replace(/\s+/g, " ").trim();
 }
 
-const accessoryWords = ["ケース","カバー","ストラップ","保護","フィルム","イヤーピース","ホルダー","収納","ケーブル","充電器","スタンド","交換","互換","アクセサリー","シール","キャップ"];
+const accessoryWords = ["ケース","カバー","ストラップ","保護フィルム","ガラスフィルム","フィルム","イヤーピース","ホルダー","収納","ポーチ","バッグ","ケーブル","充電器","アダプター","スタンド","交換用","互換","アクセサリー","シール","キャップ","スキン","バンド","ベルト","保護カバー","液晶保護","レンズ保護","ダストプラグ","ステッカー"];
 const mainProductHints = ["airpods","iphone","ipad","macbook","switch","playstation","ps5","イヤホン","ヘッドホン","ノートパソコン","モニター","カメラ","テレビ"];
 
 function relevanceScore(item, keyword) {
   const name = normalizeText(item.name);
   const q = normalizeText(keyword);
-  if (!name || !q) return 0;
-  const tokens = q.split(" ").filter(Boolean);
-  let score = 0;
-  if (name === q) score += 100;
-  if (name.includes(q)) score += 45;
-  for (const t of tokens) if (t.length > 1 && name.includes(t)) score += 12;
-  const likelyMainProduct = mainProductHints.some(w => q.includes(w));
-  if (likelyMainProduct) {
-    for (const w of accessoryWords) if (name.includes(w) && !q.includes(w)) score -= 45;
+  if (!name || !q) return -999;
+  const tokens = q.split(/[\s　/・_-]+/).filter(t => t.length > 1);
+  let score = 0, matched = 0;
+  if (name === q) score += 120;
+  if (name.includes(q)) score += 55;
+  for (const t of tokens) {
+    if (name.includes(t)) { score += 15; matched++; }
+    else score -= 9;
   }
-  if (/中古|ジャンク/.test(name) && !/中古|ジャンク/.test(q)) score -= 15;
+  if (tokens.length && matched === tokens.length) score += 30;
+  if (tokens.length > 1 && matched / tokens.length < .5) score -= 35;
+  const likelyMainProduct = mainProductHints.some(w => q.includes(w));
+  const qWantsAccessory = accessoryWords.some(w => q.includes(w));
+  if (likelyMainProduct && !qWantsAccessory) {
+    let accessoryHits = 0;
+    for (const w of accessoryWords) if (name.includes(w) && !q.includes(w)) accessoryHits++;
+    score -= accessoryHits * 65;
+    if (/対応|用\b|専用/.test(name) && accessoryHits) score -= 35;
+  }
+  const modelTokens = q.match(/[a-z]+[- ]?\d+[a-z0-9-]*/g) || [];
+  for (const model of modelTokens) if (name.includes(model.replace(/ /g,"")) || name.includes(model)) score += 35;
+  if (/中古|ジャンク|訳あり/.test(name) && !/中古|ジャンク|訳あり/.test(q)) score -= 22;
+  if (/レンタル|ふるさと納税/.test(name) && !/レンタル|ふるさと納税/.test(q)) score -= 35;
   return score;
 }
 
