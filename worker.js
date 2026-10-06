@@ -38,7 +38,7 @@ async function rakutenSearch(keyword, env) {
       total: Number(x.itemPrice || 0),
       url: x.affiliateUrl || x.itemUrl || "",
       shippingKnown: x.postageFlag === 1,
-      image: x.mediumImageUrls?.[0]?.imageUrl || ""
+      image: x.mediumImageUrls?.[0]?.imageUrl || x.mediumImageUrls?.[0] || x.smallImageUrls?.[0]?.imageUrl || x.smallImageUrls?.[0] || ""
     };
   }).filter(x => x.name && x.price > 0);
 }
@@ -62,7 +62,7 @@ async function yahooSearch(keyword, env) {
     shipping: Number(x.shipping?.flatRate || 0),
     total: Number(x.price || 0) + Number(x.shipping?.flatRate || 0),
     url: x.url || "",
-    image: x.exImage?.url || x.image?.small || ""
+    image: x.exImage?.url || x.image?.medium || x.image?.small || x.image || ""
   })).filter(x => x.name && x.price > 0);
 }
 
