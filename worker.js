@@ -66,6 +66,35 @@ async function yahooSearch(keyword, env) {
   })).filter(x => x.name && x.price > 0);
 }
 
+function normalizeText(v) {
+  return String(v || "").toLowerCase().normalize("NFKC").replace(/\s+/g, " ").trim();
+}
+
+const accessoryWords = ["ケース","カバー","ストラップ","保護","フィルム","イヤーピース","ホルダー","収納","ケーブル","充電器","スタンド","交換","互換","アクセサリー","シール","キャップ"];
+const mainProductHints = ["airpods","iphone","ipad","macbook","switch","playstation","ps5","イヤホン","ヘッドホン","ノートパソコン","モニター","カメラ","テレビ"];
+
+function relevanceScore(item, keyword) {
+  const name = normalizeText(item.name);
+  const q = normalizeText(keyword);
+  if (!name || !q) return 0;
+  const tokens = q.split(" ").filter(Boolean);
+  let score = 0;
+  if (name === q) score += 100;
+  if (name.includes(q)) score += 45;
+  for (const t of tokens) if (t.length > 1 && name.includes(t)) score += 12;
+  const likelyMainProduct = mainProductHints.some(w => q.includes(w));
+  if (likelyMainProduct) {
+    for (const w of accessoryWords) if (name.includes(w) && !q.includes(w)) score -= 45;
+  }
+  if (/中古|ジャンク/.test(name) && !/中古|ジャンク/.test(q)) score -= 15;
+  return score;
+}
+
+function rankItems(items, keyword) {
+  return items.map(x => ({...x, relevance: relevanceScore(x, keyword)}))
+    .sort((a,b) => b.relevance - a.relevance || a.total - b.total);
+}
+
 export default {
   async fetch(request, env) {
     if (request.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -89,7 +118,7 @@ export default {
         rakuten: results[0].status === "rejected" ? String(results[0].reason?.message || results[0].reason) : null,
         yahoo: results[1].status === "rejected" ? String(results[1].reason?.message || results[1].reason) : null
       };
-      const items = [...rakuten, ...yahoo].sort((a,b) => a.total - b.total);
+      const items = rankItems([...rakuten, ...yahoo], keyword);
       if (!items.length) return json({ error: "price search failed", detail: errors.rakuten || errors.yahoo || "no results", sources: { rakuten: false, yahoo: false }, errors }, 502);
       return json({
         ok: true,
