@@ -17,14 +17,23 @@ async function rakutenSearch(keyword, env) {
   url.searchParams.set("format", "json");
   url.searchParams.set("formatVersion", "2");
   url.searchParams.set("applicationId", env.RAKUTEN_APPLICATION_ID);
-  url.searchParams.set("accessKey", env.RAKUTEN_ACCESS_KEY);
+  
   if (env.RAKUTEN_AFFILIATE_ID) url.searchParams.set("affiliateId", env.RAKUTEN_AFFILIATE_ID);
   url.searchParams.set("keyword", keyword);
   url.searchParams.set("sort", "standard");
   url.searchParams.set("hits", "30");
 
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Rakuten API error: " + res.status);
+  const res = await fetch(url, { headers: { "accessKey": env.RAKUTEN_ACCESS_KEY } });
+  if (!res.ok) {
+    let detail = "";
+    try {
+      const body = await res.json();
+      detail = body.error_description || body.error || "";
+    } catch (_) {
+      try { detail = (await res.text()).slice(0, 180); } catch (_) {}
+    }
+    throw new Error("Rakuten API error: " + res.status + (detail ? " - " + detail : ""));
+  }
   const data = await res.json();
 
   if (data.error) throw new Error("Rakuten API error: " + (data.error_description || data.error));
