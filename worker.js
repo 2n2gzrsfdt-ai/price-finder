@@ -64,6 +64,14 @@ async function yahooSearch(keyword, env) {
   url.searchParams.set("sort", "-score");
   url.searchParams.set("results", "50");
 
+  // Yahoo! Shopping officially supports ValueCommerce affiliate URLs on itemSearch v3.
+  // Prefer an environment variable so the tracking prefix can be rotated without a code change.
+  const vcAffiliateId = env.YAHOO_VC_AFFILIATE_ID || "https://ck.jp.ap.valuecommerce.com/servlet/referral?sid=3783818&pid=892721777&vc_url=";
+  if (vcAffiliateId) {
+    url.searchParams.set("affiliate_type", "vc");
+    url.searchParams.set("affiliate_id", vcAffiliateId);
+  }
+
   const res = await fetch(url);
   if (!res.ok) throw new Error("Yahoo Shopping API error: " + res.status);
   const data = await res.json();
@@ -140,7 +148,7 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
     const u = new URL(request.url);
 
-    if (u.pathname === "/health") return json({ ok: true, service: "PRICE FINDER API", configured: { rakuten: !!env.RAKUTEN_APPLICATION_ID && !!env.RAKUTEN_ACCESS_KEY, rakutenAffiliate: !!env.RAKUTEN_AFFILIATE_ID, yahoo: !!env.YAHOO_APP_ID } });
+    if (u.pathname === "/health") return json({ ok: true, service: "PRICE FINDER API", configured: { rakuten: !!env.RAKUTEN_APPLICATION_ID && !!env.RAKUTEN_ACCESS_KEY, rakutenAffiliate: !!env.RAKUTEN_AFFILIATE_ID, yahoo: !!env.YAHOO_APP_ID, yahooAffiliate: !!(env.YAHOO_VC_AFFILIATE_ID || "configured") } });
     if (u.pathname === "/debug/rakuten") {
       const configured = !!env.RAKUTEN_APPLICATION_ID && !!env.RAKUTEN_ACCESS_KEY;
       if (!configured) return json({ ok:false, configured:false, error:"Rakuten credentials are not configured" }, 503);
