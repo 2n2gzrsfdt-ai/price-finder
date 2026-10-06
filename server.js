@@ -56,16 +56,11 @@ const server = http.createServer(async (req, res) => {
    const key=(url.searchParams.get('key')||'').trim();
    if(!key){res.writeHead(400,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:false,error:'key is required'}));return}
    if(!(await initDb())){res.writeHead(503,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:false,error:'database unavailable'}));return}
-   const wr=await pool.query('SELECT query,target_price FROM price_watches WHERE watch_key=$1',[key]);
+   const wr=await pool.query('SELECT id,query,target_price,reached,push_subscription FROM price_watches WHERE watch_key=$1',[key]);
    if(!wr.rows[0]){res.writeHead(404,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:false,error:'watch not found'}));return}
-   const watch=wr.rows[0], searchUrl=new URL('/api/search','http://localhost');searchUrl.searchParams.set('q',watch.query);
-   const env={...process.env};const response=await worker.fetch(new Request(searchUrl,{method:'GET'}),env);
-   const data=await response.json().catch(()=>({})),items=Array.isArray(data.items)?data.items:[];
-   if(!response.ok||!items.length){res.writeHead(502,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:false,error:'price lookup failed'}));return}
-   await saveHistory(watch.query,items).catch(e=>console.error('Watch history',e.message));
-   const valid=items.map(x=>({...x,currentTotal:Number(x.total)||Number(x.price)+(Number(x.shipping)||0)})).filter(x=>Number.isFinite(x.currentTotal)&&x.currentTotal>0).sort((a,b)=>a.currentTotal-b.currentTotal);
-   const best=valid[0],target=Number(watch.target_price),reached=!!best&&best.currentTotal<=target;
-   res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:true,query:watch.query,targetPrice:target,reached,currentPrice:best?.currentTotal||null,shop:best?.shop||null,url:best?.affiliateUrl||best?.url||null,checkedAt:new Date().toISOString()}));return
+   const result=await checkOneWatch(wr.rows[0]);
+   if(!result.ok){res.writeHead(502,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:false,error:'price lookup failed'}));return}
+   res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({...result,checkedAt:new Date().toISOString()}));return
   }
   if(url.pathname==='/api/history'){
    const q=(url.searchParams.get('q')||'').trim();
