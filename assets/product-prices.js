@@ -10,6 +10,20 @@
     ['楽天市場', (window.PRICE_FINDER_RAKUTEN_API_BASE || 'https://price-finder-production-ed37.up.railway.app') + '/api/rakuten'],
     ['Yahoo!ショッピング', (window.PRICE_FINDER_API_BASE || 'https://price-finder-api.2n2gzrsfdt.workers.dev') + '/api/search']
   ];
+  const analyticsBase = (window.PRICE_FINDER_RAKUTEN_API_BASE || 'https://price-finder-production-ed37.up.railway.app').replace(/\/$/, '');
+  function track(type, shop = '') {
+    try {
+      fetch(analyticsBase + '/api/analytics/event', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        credentials: 'omit', keepalive: true,
+        body: JSON.stringify({ type, query, shop })
+      }).catch(() => {});
+    } catch { /* Tracking must never block a comparison or purchase. */ }
+  }
+  track('product_page_view');
+  for (const link of document.querySelectorAll('a[href^="./?q="]')) {
+    link.addEventListener('click', () => track('product_compare_click'));
+  }
   let generation = 0;
   function normalized(value) { return String(value || '').normalize('NFKC').toLowerCase().replace(/[\s・_-]/g, ''); }
   function matches(name) {
@@ -82,6 +96,7 @@
       const details = document.createElement('div');
       details.append(text('b', row.name), text('small', row.shop), text('div', yen(row.total ?? row.price), 'amount'), text('small', row.known ? '商品 ' + yen(row.price) + '＋送料 ' + yen(row.shipping) : '商品価格のみ・送料未確認'));
       const link = text('a', '購入先で条件を確認', 'btn'); link.href = row.url; link.rel = 'sponsored noopener';
+      link.addEventListener('click', () => track('product_shop_click', row.shop));
       article.append(details, link); offers.append(article);
     }
     retry.disabled = false;

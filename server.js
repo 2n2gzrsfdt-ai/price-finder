@@ -45,7 +45,7 @@ const server = http.createServer(async (req, res) => {
    if(!(await initDb())){res.writeHead(503,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:false}));return}
    let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>4000)break}let body={};try{body=JSON.parse(raw||'{}')}catch{}
    const type=String(body.type||'').trim(),q=String(body.query||'').trim().slice(0,200),shop=String(body.shop||'').trim().slice(0,80);
-   if(!['page_view','search','shop_click'].includes(type)){res.writeHead(400,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:false}));return}
+   if(!['page_view','search','shop_click','product_page_view','product_compare_click','product_shop_click'].includes(type)){res.writeHead(400,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:false}));return}
    await pool.query('INSERT INTO analytics_events(event_type,query,shop) VALUES($1,$2,$3)',[type,q||null,shop||null]);
    res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:true}));return
   }
@@ -54,7 +54,14 @@ const server = http.createServer(async (req, res) => {
    const r=await pool.query(`SELECT event_type,COUNT(*)::int AS count FROM analytics_events WHERE created_at>=NOW()-INTERVAL '30 days' GROUP BY event_type`);
    const top=await pool.query(`SELECT query,COUNT(*)::int AS count FROM analytics_events WHERE event_type='search' AND query IS NOT NULL AND created_at>=NOW()-INTERVAL '30 days' GROUP BY query ORDER BY count DESC LIMIT 10`);
    const shops=await pool.query(`SELECT shop,COUNT(*)::int AS count FROM analytics_events WHERE event_type='shop_click' AND shop IS NOT NULL AND created_at>=NOW()-INTERVAL '30 days' GROUP BY shop ORDER BY count DESC`);
-   res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:true,periodDays:30,counts:Object.fromEntries(r.rows.map(x=>[x.event_type,x.count])),topSearches:top.rows,shopClicks:shops.rows}));return
+   const products=await pool.query(`SELECT query,
+    COUNT(*) FILTER (WHERE event_type='product_page_view')::int AS views,
+    COUNT(*) FILTER (WHERE event_type='product_compare_click')::int AS comparisons,
+    COUNT(*) FILTER (WHERE event_type='product_shop_click')::int AS clicks
+    FROM analytics_events WHERE event_type IN ('product_page_view','product_compare_click','product_shop_click')
+    AND query IS NOT NULL AND created_at>=NOW()-INTERVAL '30 days'
+    GROUP BY query ORDER BY clicks DESC,views DESC,query LIMIT 20`);
+   res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:true,periodDays:30,productPages:products.rows,counts:Object.fromEntries(r.rows.map(x=>[x.event_type,x.count])),topSearches:top.rows,shopClicks:shops.rows}));return
   }
   if(url.pathname==='/api/watch'){
    if(!(await initDb())){res.writeHead(503,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:false,error:'database unavailable'}));return}
