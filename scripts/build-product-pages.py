@@ -25,6 +25,24 @@ for p in items:
  (ROOT/(p['slug']+'.html')).write_text(html)
 hub=''.join('<section class="box"><h2>'+esc(model)+'</h2><div class="links">'+''.join(f'<a href="./{x["slug"]}.html">{esc(x["name"])}</a>' for x in items if x['group']==slug)+'</div></section>' for slug,model,caps,source in groups)
 (ROOT/'products.html').write_text('<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>機種・容量別の価格比較一覧｜PRICE FINDER</title><meta name="description" content="iPhoneとiPad Airの機種・容量別に購入候補を比較。送料、通信条件、商品状態も確認できます。"><link rel="canonical" href="'+BASE+'products.html"><link rel="stylesheet" href="./assets/product-pages.css"></head><body><main><nav><a href="./">PRICE FINDER</a></nav><h1>機種・容量別の価格比較</h1><p>欲しい機種と容量を選び、同じ条件の購入候補を探せます。</p>'+hub+'</main></body></html>')
+# Keep the full catalog discoverable; preserve canonical titles from existing pages.
+from html import unescape
+allpages=[]
+for f in sorted(ROOT.glob('*.html')):
+ if f.name in {'index.html','products.html','analytics.html'} or f.name.startswith('google') or f.stem in {x['slug'] for x in items}:continue
+ content=f.read_text()
+ heading=re.search(r'<h1[^>]*>(.*?)</h1>',content,re.S)
+ canonical=re.search(r'<link[^>]*rel="canonical"[^>]*href="([^"]+)"',content)
+ if not heading or not canonical:continue
+ label=unescape(re.sub(r'<[^>]+>','',heading.group(1))).replace('の価格を比較','').replace('の価格比較','').strip()
+ allpages.append((f.name,label))
+ catalog='<section class="box"><h2>ほかの商品・カテゴリから探す</h2><p>容量別ページに加え、機種やカテゴリ全体の比較ページも選べます。</p><div class="links">'+''.join('<a href="./'+esc(filename)+'">'+esc(label)+'</a>' for filename,label in allpages)+'</div></section>'
+hubfile=ROOT/'products.html';hubfile.write_text(hubfile.read_text().replace('</main>',catalog+'</main>'))
+for filename,label in allpages:
+ f=ROOT/filename;content=f.read_text()
+ if 'href="./products.html"' not in content:
+  content=content.replace('</main>','<section class="box"><h2>商品一覧から探す</h2><p><a href="./products.html">機種・容量・カテゴリ別の価格比較一覧</a></p></section></main>')
+  f.write_text(content)
 marker='<!-- capacity-pages:start -->';end='<!-- capacity-pages:end -->'
 for parent in sorted(set(x['parent'] for x in items)):
  f=ROOT/(parent+'.html');s=f.read_text();block=marker+'<section class="box"><h2>容量を指定して価格比較</h2><div class="related">'+''.join(f'<a href="./{x["slug"]}.html">{esc(x["name"])}</a>' for x in items if x['parent']==parent)+'</div></section>'+end
