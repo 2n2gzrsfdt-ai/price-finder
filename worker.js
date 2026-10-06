@@ -100,7 +100,17 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
     const u = new URL(request.url);
 
-    if (u.pathname === "/health") return json({ ok: true, service: "PRICE FINDER API", configured: { rakuten: !!env.RAKUTEN_APPLICATION_ID && !!env.RAKUTEN_ACCESS_KEY, yahoo: !!env.YAHOO_APP_ID } });
+    if (u.pathname === "/health") return json({ ok: true, service: "PRICE FINDER API", configured: { rakuten: !!env.RAKUTEN_APPLICATION_ID && !!env.RAKUTEN_ACCESS_KEY, rakutenAffiliate: !!env.RAKUTEN_AFFILIATE_ID, yahoo: !!env.YAHOO_APP_ID } });
+    if (u.pathname === "/debug/rakuten") {
+      const configured = !!env.RAKUTEN_APPLICATION_ID && !!env.RAKUTEN_ACCESS_KEY;
+      if (!configured) return json({ ok:false, configured:false, error:"Rakuten credentials are not configured" }, 503);
+      try {
+        const items = await rakutenSearch("AirPods", env);
+        return json({ ok:true, configured:true, count:items.length, sample:items.slice(0,2).map(x=>({name:x.name,price:x.price,hasUrl:!!x.url,hasImage:!!x.image})) });
+      } catch (e) {
+        return json({ ok:false, configured:true, error:String(e?.message||e) }, 502);
+      }
+    }
     if (u.pathname !== "/api/search") return json({ error: "Not found" }, 404);
 
     const keyword = (u.searchParams.get("q") || "").trim();
