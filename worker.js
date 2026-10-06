@@ -115,9 +115,24 @@ function relevanceScore(item, keyword) {
   return score;
 }
 
+function isObviousAccessory(item, keyword) {
+  const name = normalizeText(item.name);
+  const q = normalizeText(keyword);
+  const likelyMainProduct = mainProductHints.some(w => q.includes(w));
+  const qWantsAccessory = accessoryWords.some(w => q.includes(w));
+  if (!likelyMainProduct || qWantsAccessory) return false;
+  const hits = accessoryWords.filter(w => name.includes(w) && !q.includes(w)).length;
+  if (!hits) return false;
+  const strongAccessory = /ケース|カバー|フィルム|イヤーピース|ストラップ|ホルダー|ポーチ|ケーブル|充電器|アダプター|スタンド|交換用|アクセサリー|バンド|ベルト|ステッカー/.test(name);
+  const accessoryPattern = /対応|専用|用ケース|保護|収納|交換用/.test(name);
+  return hits >= 2 || (strongAccessory && accessoryPattern);
+}
+
 function rankItems(items, keyword) {
-  return items.map(x => ({...x, relevance: relevanceScore(x, keyword)}))
+  const ranked = items.map(x => ({...x, relevance: relevanceScore(x, keyword)}))
     .sort((a,b) => b.relevance - a.relevance || a.total - b.total);
+  const filtered = ranked.filter(x => !isObviousAccessory(x, keyword));
+  return filtered.length >= 3 ? filtered : ranked;
 }
 
 export default {
