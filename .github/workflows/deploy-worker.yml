@@ -3,6 +3,7 @@ name: Deploy PRICE FINDER API
 on:
   workflow_dispatch:
   push:
+    branches: [main]
     paths:
       - "worker.js"
       - "wrangler.toml"
@@ -13,15 +14,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: cloudflare/wrangler-action@v3
+      - name: Validate required secrets
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy
-      - name: Set API secrets
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          RAKUTEN_APP: ${{ secrets.RAKUTEN_APPLICATION_ID }}
+          RAKUTEN_KEY: ${{ secrets.RAKUTEN_ACCESS_KEY }}
+          YAHOO_ID: ${{ secrets.YAHOO_APP_ID }}
+        run: |
+          test -n "$CF_TOKEN" || (echo "Missing CLOUDFLARE_API_TOKEN" && exit 1)
+          test -n "$CF_ACCOUNT" || (echo "Missing CLOUDFLARE_ACCOUNT_ID" && exit 1)
+          test -n "$RAKUTEN_APP" || (echo "Missing RAKUTEN_APPLICATION_ID" && exit 1)
+          test -n "$RAKUTEN_KEY" || (echo "Missing RAKUTEN_ACCESS_KEY" && exit 1)
+          test -n "$YAHOO_ID" || (echo "Missing YAHOO_APP_ID" && exit 1)
+      - name: Set Worker secrets
         env:
           RAKUTEN_APPLICATION_ID: ${{ secrets.RAKUTEN_APPLICATION_ID }}
           RAKUTEN_ACCESS_KEY: ${{ secrets.RAKUTEN_ACCESS_KEY }}
@@ -32,5 +38,11 @@ jobs:
         run: |
           printf '%s' "$RAKUTEN_APPLICATION_ID" | npx wrangler secret put RAKUTEN_APPLICATION_ID
           printf '%s' "$RAKUTEN_ACCESS_KEY" | npx wrangler secret put RAKUTEN_ACCESS_KEY
-          printf '%s' "$RAKUTEN_AFFILIATE_ID" | npx wrangler secret put RAKUTEN_AFFILIATE_ID
+          if [ -n "$RAKUTEN_AFFILIATE_ID" ]; then printf '%s' "$RAKUTEN_AFFILIATE_ID" | npx wrangler secret put RAKUTEN_AFFILIATE_ID; fi
           printf '%s' "$YAHOO_APP_ID" | npx wrangler secret put YAHOO_APP_ID
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
