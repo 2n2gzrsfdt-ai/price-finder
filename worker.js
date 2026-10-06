@@ -21,7 +21,13 @@ async function rakutenSearch(keyword, env) {
   if (env.RAKUTEN_AFFILIATE_ID) url.searchParams.set("affiliateId", env.RAKUTEN_AFFILIATE_ID);
   url.searchParams.set("keyword", keyword);
     
-  const res = await fetch(url);
+  const res = await fetch(url, {
+    headers: {
+      "Referer": "https://2n2gzrsfdt-ai.github.io/price-finder/",
+      "Origin": "https://2n2gzrsfdt-ai.github.io",
+      "User-Agent": "PRICE-FINDER/1.0"
+    }
+  });
   if (!res.ok) {
     let detail = "";
     try {
