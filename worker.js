@@ -15,15 +15,13 @@ async function rakutenSearch(keyword, env) {
   if (!env.RAKUTEN_APPLICATION_ID || !env.RAKUTEN_ACCESS_KEY) return [];
   const url = new URL("https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260701");
   url.searchParams.set("format", "json");
-  url.searchParams.set("formatVersion", "2");
-  url.searchParams.set("applicationId", env.RAKUTEN_APPLICATION_ID);
+    url.searchParams.set("applicationId", env.RAKUTEN_APPLICATION_ID);
+  url.searchParams.set("accessKey", env.RAKUTEN_ACCESS_KEY);
   
   if (env.RAKUTEN_AFFILIATE_ID) url.searchParams.set("affiliateId", env.RAKUTEN_AFFILIATE_ID);
   url.searchParams.set("keyword", keyword);
-  url.searchParams.set("sort", "standard");
-  url.searchParams.set("hits", "30");
-
-  const res = await fetch(url, { headers: { "accessKey": env.RAKUTEN_ACCESS_KEY } });
+    
+  const res = await fetch(url);
   if (!res.ok) {
     let detail = "";
     try {
