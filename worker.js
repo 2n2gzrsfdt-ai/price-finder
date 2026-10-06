@@ -62,7 +62,7 @@ async function yahooSearch(keyword, env) {
     shipping: Number(x.shipping?.flatRate || 0),
     total: Number(x.price || 0) + Number(x.shipping?.flatRate || 0),
     url: x.url || "",
-    image: x.exImage?.url || x.image?.medium || x.image?.small || x.image || ""
+    image: x.exImage?.url || x.image?.large || x.image?.medium || x.image?.small || x.image || ""
   })).filter(x => x.name && x.price > 0);
 }
 
