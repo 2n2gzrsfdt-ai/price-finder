@@ -53,4 +53,9 @@ for path in ['products.html']+[x['slug']+'.html' for x in items]:
  if BASE+path not in present:
   u=ET.SubElement(root,'{'+ns+'}url');ET.SubElement(u,'{'+ns+'}loc').text=BASE+path
 ET.indent(tree,space='  ');tree.write(f,encoding='utf-8',xml_declaration=True)
+for page in ROOT.glob('*.html'):
+ if page.name.startswith('google') or page.name=='analytics.html':continue
+ content=page.read_text()
+ if 'assets/premium.css' not in content:
+  page.write_text(content.replace('</head>','<link rel="stylesheet" href="./assets/premium.css?v=20261008"></head>',1))
 print('Generated',len(items),'comparison pages and directory')
