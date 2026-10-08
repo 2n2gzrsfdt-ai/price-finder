@@ -60,6 +60,10 @@ async function yahooSearch(keyword, env) {
   if (!env.YAHOO_APP_ID) return [];
   const url = new URL("https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch");
   url.searchParams.set("appid", env.YAHOO_APP_ID);
+  if (env.YAHOO_AFFILIATE_ID) {
+    url.searchParams.set("affiliate_type", "vc");
+    url.searchParams.set("affiliate_id", env.YAHOO_AFFILIATE_ID);
+  }
   url.searchParams.set("query", keyword);
   url.searchParams.set("sort", "-score");
   url.searchParams.set("results", "50");
@@ -140,7 +144,7 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
     const u = new URL(request.url);
 
-    if (u.pathname === "/health") return json({ ok: true, service: "PRICE FINDER API", configured: { rakuten: !!env.RAKUTEN_APPLICATION_ID && !!env.RAKUTEN_ACCESS_KEY, rakutenAffiliate: !!env.RAKUTEN_AFFILIATE_ID, yahoo: !!env.YAHOO_APP_ID, yahooAffiliate: false } });
+    if (u.pathname === "/health") return json({ ok: true, service: "PRICE FINDER API", configured: { rakuten: !!env.RAKUTEN_APPLICATION_ID && !!env.RAKUTEN_ACCESS_KEY, rakutenAffiliate: !!env.RAKUTEN_AFFILIATE_ID, yahoo: !!env.YAHOO_APP_ID, yahooAffiliate: !!env.YAHOO_APP_ID && !!env.YAHOO_AFFILIATE_ID } });
     if (u.pathname === "/debug/rakuten") {
       const configured = !!env.RAKUTEN_APPLICATION_ID && !!env.RAKUTEN_ACCESS_KEY;
       if (!configured) return json({ ok:false, configured:false, error:"Rakuten credentials are not configured" }, 503);
