@@ -1,3 +1,15 @@
+/* Yahoo! Shopping affiliate IDs supplied by the site owner. */
+window.priceFinderAffiliateUrl = function (value) {
+  try {
+    const destination = new URL(value, 'https://2n2gzrsfdt-ai.github.io/price-finder/');
+    if (destination.protocol !== 'https:' || !['shopping.yahoo.co.jp', 'store.shopping.yahoo.co.jp'].includes(destination.hostname)) return value;
+    const referral = new URL('https://ck.jp.ap.valuecommerce.com/servlet/referral');
+    referral.searchParams.set('sid', '3783818');
+    referral.searchParams.set('pid', '892722877');
+    referral.searchParams.set('vc_url', destination.href);
+    return referral.href;
+  } catch { return value; }
+};
 (() => {
   'use strict';
   const section = document.getElementById('comparison');
@@ -95,7 +107,7 @@
       const article = text('article', '', 'offer');
       const details = document.createElement('div');
       details.append(text('b', row.name), text('small', row.shop), text('div', yen(row.total ?? row.price), 'amount'), text('small', row.known ? '商品 ' + yen(row.price) + '＋送料 ' + yen(row.shipping) : '商品価格のみ・送料未確認'));
-      const link = text('a', '購入先で条件を確認', 'btn'); link.href = row.url; link.rel = 'sponsored noopener';
+      const link = text('a', '購入先で条件を確認', 'btn'); link.href = window.priceFinderAffiliateUrl(row.url); link.rel = 'sponsored noopener';
       link.addEventListener('click', () => track('product_shop_click', row.shop));
       article.append(details, link); offers.append(article);
     }
