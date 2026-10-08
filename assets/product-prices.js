@@ -20,7 +20,7 @@ window.priceFinderAffiliateUrl = function (value) {
   const { query, model, capacity } = section.dataset;
   const endpoints = [
     ['楽天市場', (window.PRICE_FINDER_RAKUTEN_API_BASE || 'https://price-finder-production-ed37.up.railway.app') + '/api/rakuten'],
-    ['Yahoo!ショッピング', (window.PRICE_FINDER_API_BASE || 'https://price-finder-api.2n2gzrsfdt.workers.dev') + '/api/search']
+    ['Yahoo!ショッピング', (window.PRICE_FINDER_API_BASE || 'https://price-finder-production-ed37.up.railway.app') + '/api/search']
   ];
   const analyticsBase = (window.PRICE_FINDER_RAKUTEN_API_BASE || 'https://price-finder-production-ed37.up.railway.app').replace(/\/$/, '');
   function track(type, shop = '') {
