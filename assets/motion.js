@@ -21,6 +21,16 @@
   if (hero) {
     const ornaments = document.createElement('div'); ornaments.className = 'pf-hero-ornaments'; ornaments.setAttribute('aria-hidden', 'true');
     for (const cls of ['pf-orbit', 'pf-orbit', 'pf-floating-tag']) { const node = document.createElement('i'); node.className = cls; ornaments.append(node); }
+    if (!reduced.matches) {
+      const aurora = document.createElement('div'); aurora.className = 'pf-aurora'; ornaments.prepend(aurora);
+      for (let i = 0; i < 18; i++) {
+        const spark = document.createElement('i'); spark.className = 'pf-spark';
+        spark.style.setProperty('--spark-x', ((i * 37 + 9) % 100) + '%');
+        spark.style.setProperty('--spark-y', ((i * 23 + 12) % 100) + '%');
+        spark.style.setProperty('--spark-time', (4 + i % 5) + 's');
+        spark.style.setProperty('--spark-delay', (-i * .65) + 's'); ornaments.append(spark);
+      }
+    }
     hero.prepend(ornaments);
     const cue = document.createElement('div'); cue.className = 'pf-scroll-cue'; cue.textContent = 'SCROLL TO EXPLORE'; cue.setAttribute('aria-hidden', 'true'); hero.append(cue);
   }
@@ -63,7 +73,7 @@
         if (!reduced.matches && typeof entry.target.animate === 'function') {
           const card = entry.target.classList.contains('pf-feature');
           const order = card ? Array.from(entry.target.parentElement.children).indexOf(entry.target) : 0;
-          entry.target.animate([{ opacity: .2, transform: 'translateY(28px) rotate(1deg)' }, { opacity: 1, transform: 'translateY(0) rotate(0deg)' }], { duration: 750, delay: order * 110, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' });
+          entry.target.animate([{ opacity: .1, transform: 'translateY(55px) scale(.91) rotate(3deg)' }, { opacity: 1, transform: 'translateY(-5px) scale(1.01) rotate(-.5deg)', offset: .8 }, { opacity: 1, transform: 'translateY(0) scale(1) rotate(0deg)' }], { duration: 750, delay: order * 110, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' });
           const photo = entry.target.querySelector('.pf-feature-art');
           if (photo) photo.animate([{ clipPath: 'inset(100% 0 0 0)' }, { clipPath: 'inset(0% 0 0 0)' }], { duration: 900, delay: order * 110, easing: 'cubic-bezier(.2,.7,.2,1)' });
         }
@@ -78,6 +88,12 @@
     const results = document.getElementById('results');
     if (results) new MutationObserver(observeCards).observe(results, { childList: true, subtree: true });
   }
+  document.addEventListener('click', event => {
+    if (reduced.matches || event.detail === 0 || !(event.target instanceof Element) || !event.target.closest('button,.pf-feature')) return;
+    const wave = document.createElement('i'); wave.className = 'pf-tap-wave'; wave.setAttribute('aria-hidden', 'true');
+    wave.style.left = event.clientX + 'px'; wave.style.top = event.clientY + 'px'; document.body.append(wave);
+    setTimeout(() => wave.remove(), 700);
+  });
   const button = document.getElementById('compareButton');
   if (button) {
     const updateBusy = () => {
