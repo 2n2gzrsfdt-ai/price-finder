@@ -1,6 +1,29 @@
 (() => {
   'use strict';
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  const hero = document.querySelector('.pf-home .hero');
+  const heading = hero?.querySelector('h1');
+  if (heading && !reduced.matches) {
+    heading.setAttribute('aria-label', heading.textContent);
+    const walker = document.createTreeWalker(heading, NodeFilter.SHOW_TEXT);
+    const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
+    let index = 0;
+    for (const node of nodes) {
+      const fragment = document.createDocumentFragment();
+      for (const char of Array.from(node.textContent)) {
+        const span = document.createElement('span'); span.className = 'pf-letter';
+        span.textContent = char; span.setAttribute('aria-hidden', 'true');
+        span.style.setProperty('--pf-letter-index', index++); fragment.append(span);
+      }
+      node.replaceWith(fragment);
+    }
+  }
+  if (hero) {
+    const ornaments = document.createElement('div'); ornaments.className = 'pf-hero-ornaments'; ornaments.setAttribute('aria-hidden', 'true');
+    for (const cls of ['pf-orbit', 'pf-orbit', 'pf-floating-tag']) { const node = document.createElement('i'); node.className = cls; ornaments.append(node); }
+    hero.prepend(ornaments);
+    const cue = document.createElement('div'); cue.className = 'pf-scroll-cue'; cue.textContent = 'SCROLL TO EXPLORE'; cue.setAttribute('aria-hidden', 'true'); hero.append(cue);
+  }
   const progress = document.createElement('div');
   progress.className = 'pf-scroll-progress'; progress.setAttribute('aria-hidden', 'true');
   document.body.append(progress);
@@ -8,6 +31,15 @@
   function paintProgress() {
     const range = document.documentElement.scrollHeight - innerHeight;
     progress.style.transform = `scaleX(${range > 0 ? Math.min(1, Math.max(0, scrollY / range)) : 0})`;
+    if (hero && !reduced.matches) {
+      const bounds = hero.getBoundingClientRect();
+      if (bounds.bottom > 0 && bounds.top < innerHeight) {
+        const ratio = Math.min(1, Math.max(0, -bounds.top / bounds.height));
+        hero.style.setProperty('--pf-scroll-turn', (ratio * 75) + 'deg');
+        hero.style.setProperty('--pf-scroll-drift', (ratio * 32) + 'px');
+        hero.style.setProperty('--pf-photo-drift', (ratio * 12) + 'px');
+      }
+    }
     scheduled = false;
   }
   addEventListener('scroll', () => { if (!scheduled) { scheduled = true; requestAnimationFrame(paintProgress); } }, { passive: true });
@@ -29,7 +61,11 @@
         if (!entry.isIntersecting) continue;
         reveal.unobserve(entry.target);
         if (!reduced.matches && typeof entry.target.animate === 'function') {
-          entry.target.animate([{ opacity: .35, transform: 'translateY(18px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 560, easing: 'cubic-bezier(.2,.7,.2,1)' });
+          const card = entry.target.classList.contains('pf-feature');
+          const order = card ? Array.from(entry.target.parentElement.children).indexOf(entry.target) : 0;
+          entry.target.animate([{ opacity: .2, transform: 'translateY(28px) rotate(1deg)' }, { opacity: 1, transform: 'translateY(0) rotate(0deg)' }], { duration: 750, delay: order * 110, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' });
+          const photo = entry.target.querySelector('.pf-feature-art');
+          if (photo) photo.animate([{ clipPath: 'inset(100% 0 0 0)' }, { clipPath: 'inset(0% 0 0 0)' }], { duration: 900, delay: order * 110, easing: 'cubic-bezier(.2,.7,.2,1)' });
         }
       }
     }, { threshold: .08 });
