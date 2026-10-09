@@ -23,7 +23,7 @@
     for (const cls of ['pf-orbit', 'pf-orbit', 'pf-floating-tag']) { const node = document.createElement('i'); node.className = cls; ornaments.append(node); }
     if (!reduced.matches) {
       const aurora = document.createElement('div'); aurora.className = 'pf-aurora'; ornaments.prepend(aurora);
-      for (let i = 0; i < 18; i++) {
+      for (let i = 0; i < 8; i++) {
         const spark = document.createElement('i'); spark.className = 'pf-spark';
         spark.style.setProperty('--spark-x', ((i * 37 + 9) % 100) + '%');
         spark.style.setProperty('--spark-y', ((i * 23 + 12) % 100) + '%');
