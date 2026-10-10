@@ -23,3 +23,7 @@
 @keyframes pf-light-flow{from{transform:translateX(-15%) rotate(-8deg)}to{transform:translateX(18%) rotate(8deg)}}@keyframes pf-aurora-turn{to{transform:rotate(360deg)}}@keyframes pf-spark-float{from{transform:translateY(14px) scale(.7);opacity:.2}to{transform:translateY(-22px) scale(1.1);opacity:.85}}@keyframes pf-photo-float{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-9px) rotate(1deg)}}@keyframes pf-glow{from{opacity:.4;box-shadow:0 0 12px #ccb07730}to{opacity:1;box-shadow:0 0 38px #ccb07770}}@keyframes pf-gold-flow{to{background-position:100% center}}@keyframes pf-button-shine{0%,65%{transform:translateX(-60%)}90%,100%{transform:translateX(60%)}}@keyframes pf-tap-wave{to{transform:scale(6);opacity:0}}
 @media(max-width:760px){.pf-aurora{animation-duration:35s}.pf-home .pf-visual{animation:pf-enter .8s both,pf-photo-float 8s 1s ease-in-out infinite}.pf-spark:nth-child(n+12){display:none}}
 @media(prefers-reduced-motion:reduce){.pf-aurora,.pf-spark,.pf-tap-wave{display:none}.pf-home .pf-visual{animation:none!important;transform:none}.pf-home .primary:before{display:none}}
+
+/* Safari: transformed glyphs must not paint a gradient rectangle. */
+.pf-home .hero h1 em,.pf-home .hero h1 em .pf-letter{background:none!important;background-image:none!important;background-clip:border-box!important;-webkit-background-clip:border-box!important;color:#dfbf85!important;-webkit-text-fill-color:#dfbf85!important}
+.pf-home .hero h1 em .pf-letter{animation-name:pf-letter-in!important}
